@@ -11,10 +11,22 @@ pixel_pin = board.D18
 
 # The number of NeoPixels
 num_pixels = 30
-max_bright = 5
+max_bright = 255
+moon_bright = 25
 min_bright = 0
 step = 1
-delay = 1
+delay = 1.5
+
+#Light times
+sunriseStart = datetime.time(7, 0, 0)
+sunsetStart = datetime.time(21, 30, 0)
+moonStart = datetime.time(1, 30, 0)
+nightStart = datetime.time(1, 31, 0)
+
+#Booleans
+sunriseRun = False
+sunsetRun = False
+moonRun = False
 
 #Colour Values
 global WR
@@ -116,7 +128,7 @@ def white_pixels_down(r = max_bright, g = max_bright, b = max_bright):
     WG = g
     WB = b
     print("Begin - White RGB values are {}/{}/{}".format(WR, WG, WB))        
-    while r > min_bright or g > min_bright or b > min_bright:
+    while r > min_bright or g > min_bright or b > moon_bright:
         if r > min_bright: r -= step
         if g > min_bright: g -= step
         if b > min_bright: b -= step
@@ -133,19 +145,65 @@ def white_pixels_down(r = max_bright, g = max_bright, b = max_bright):
         WB = b
     print("Finished - White RGB values are {}/{}/{}".format(WR, WG, WB)) 
 
+def isNowInTimePeriod(startTime, endTime, nowTime):
+    if startTime < endTime:
+        if nowTime > startTime and nowTime < endTime:
+            return True
+        else:
+            return False
+    else:
+        if nowTime < endTime or nowTime > startTime:
+            return True
+        else:
+            return False
+        
+def checkTime(start, end):
+    timeStart = start 
+    timeEnd = end 
+    timeNow = datetime.datetime.now().time()
+    if isNowInTimePeriod(timeStart, timeEnd, timeNow):
+        print(timeNow, "Time in range - Starting now")
+        return True
+    else:
+        print(timeNow, "Time not in range - waiting until", timeStart)
+        
 def sunrise():
     blue_pixels()
     red_pixels()
     white_pixels()
+
     
 def sunset():
     red_pixels_down(max_bright)
     white_pixels_down(max_bright, max_bright, max_bright)
     blue_pixels_down(0, 0, max_bright)
     
+def moonset():
+    blue_pixels_down(0, 0, moon_bright)
     
-sunrise()
-time.sleep(5)
-sunset()
+while True:
+    #Sunrise
+    if sunriseRun != True:
+        if checkTime(sunriseStart, sunsetStart):
+            sunrise()
+            sunriseRun = True
+        time.sleep(1)
+    #Sunset - Hold moon lighting until night    
+    if sunsetRun != True:
+        if checkTime(sunsetStart, moonStart):
+            sunset()
+            sunsetRun = True
+        time.sleep(1)
+    #Moon sets into darkness    
+    if moonRun != True:
+        if checkTime(moonStart, nightStart):
+            moonset()
+            moonRun = True
+        time.sleep(1) 
+    
+    
+##sunrise()
+##time.sleep(5)
+##sunset()
 
     
