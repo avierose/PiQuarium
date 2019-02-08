@@ -18,7 +18,7 @@ sunsetStart = datetime.time(21, 30, 0)
 moonStart = datetime.time(1, 30, 0)
 nightStart = datetime.time(1, 31, 0)
 
-#Booleans
+#Run Tokens
 sunriseRun = False
 sunsetRun = False
 moonRun = False
@@ -172,6 +172,8 @@ def sunset():
     
 def moonset():
     blue_pixels_down(0, 0, moon_bright)
+
+#Main loop
     
 while True:
     #Sunrise
@@ -180,19 +182,22 @@ while True:
             sunrise()
             sunriseRun = True
         time.sleep(1)
+
     #Sunset - Hold moon lighting until night    
     if sunsetRun != True:
         if checkTime(sunsetStart, moonStart):
             sunset()
             sunsetRun = True
         time.sleep(1)
+
     #Moon sets into darkness    
     if moonRun != True:
         if checkTime(moonStart, nightStart):
             moonset()
             moonRun = True
         time.sleep(1) 
-    #reset runs
+    
+    #Reset run tokens
     if moonRun = True:
         if checkTime(nightStart, sunriseStart):
             moonRun = False
