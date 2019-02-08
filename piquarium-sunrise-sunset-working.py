@@ -3,19 +3,14 @@ import datetime
 import board
 import neopixel
 
-
-'''Choose an open pin connected to the Data In of the NeoPixel strip, i.e. board.D18
-NeoPixels must be connected to D10, D12, D18 or D21 to work.
-'''
-pixel_pin = board.D18
-
-# The number of NeoPixels
-num_pixels = 30
-max_bright = 255
-moon_bright = 25
-min_bright = 0
-step = 1
-delay = 1.5
+# Params
+pixel_pin = board.D18 # Data pin for neopixels
+num_pixels = 30 # Number of pixels
+max_bright = 255 # Maximum brightness level
+moon_bright = 25 # Brightness level of moonlight
+min_bright = 0 # Minimum brightness level
+step = 1 # Steps to increase lighting by on each cycle
+delay = 1.5 # Delay between cycles in seconds
 
 #Light times
 sunriseStart = datetime.time(7, 0, 0)
@@ -33,9 +28,6 @@ global WR
 global WG
 global WB
 
-'''The order of the pixel colors - RGB or GRB. Some NeoPixels have red and green reversed!
-For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
-'''
 ORDER = neopixel.GRB
 
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels,
@@ -200,10 +192,12 @@ while True:
             moonset()
             moonRun = True
         time.sleep(1) 
-    
-    
-##sunrise()
-##time.sleep(5)
-##sunset()
+    #reset runs
+    if moonRun = True:
+        if checkTime(nightStart, sunriseStart):
+            moonRun = False
+            sunsetRun = False
+            sunriseRun = False
+        time.sleep(1)
 
     
