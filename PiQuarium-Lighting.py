@@ -7,16 +7,16 @@ import neopixel
 pixel_pin = board.D18 # Data pin for neopixels
 num_pixels = 30 # Number of pixels
 max_bright = 255 # Maximum brightness level
-moon_bright = 25 # Brightness level of moonlight
+moon_bright = 50 # Brightness level of moonlight
 min_bright = 0 # Minimum brightness level
 step = 1 # Steps to increase lighting by on each cycle
-delay = 1.5 # Delay between cycles in seconds
+delay = 2.3 # Delay between cycles in seconds
 
 #Light times
-sunriseStart = datetime.time(7, 0, 0)
-sunsetStart = datetime.time(21, 30, 0)
-moonStart = datetime.time(1, 30, 0)
-nightStart = datetime.time(1, 31, 0)
+sunriseStart = datetime.time(7, 50, 0)
+sunsetStart = datetime.time(21, 55, 0)
+moonStart = datetime.time(0, 36, 0)
+nightStart = datetime.time(0, 39, 0)
 
 #Run Tokens
 sunriseRun = False
@@ -81,10 +81,10 @@ def blue_pixels(r=0, g=0, b=0):
             print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
         time.sleep(delay)
 
-def blue_pixels_down(r=0, g=0, b=max_bright):
+def blue_pixels_down(r=0, g=0, b=max_bright, end_value=0):
     print("Begin - Blue RGB values are {}/{}/{}".format(r, g, b))
-    while b > min_bright:
-        if b > min_bright: b -= step
+    while b > end_value:
+        if b > end_value: b -= step
         
         for pos in bluepix:
             pixels[pos] = (r, g, b)
@@ -168,41 +168,36 @@ def sunrise():
 def sunset():
     red_pixels_down(max_bright)
     white_pixels_down(max_bright, max_bright, max_bright)
-    blue_pixels_down(0, 0, max_bright)
+    blue_pixels_down(0, 0, max_bright, moon_bright)
     
 def moonset():
-    blue_pixels_down(0, 0, moon_bright)
+    blue_pixels_down(0, 0, moon_bright, min_bright)
 
 #Main loop
     
 while True:
     #Sunrise
-    if sunriseRun != True:
+    if not sunriseRun:
         if checkTime(sunriseStart, sunsetStart):
             sunrise()
             sunriseRun = True
-        time.sleep(1)
 
     #Sunset - Hold moon lighting until night    
-    if sunsetRun != True:
+    if not sunsetRun:
         if checkTime(sunsetStart, moonStart):
             sunset()
             sunsetRun = True
-        time.sleep(1)
 
     #Moon sets into darkness    
-    if moonRun != True:
+    if not moonRun:
         if checkTime(moonStart, nightStart):
             moonset()
             moonRun = True
-        time.sleep(1) 
     
     #Reset run tokens
-    if moonRun = True:
+    if moonRun:
         if checkTime(nightStart, sunriseStart):
             moonRun = False
             sunsetRun = False
             sunriseRun = False
-        time.sleep(1)
-
-    
+    time.sleep(1)
