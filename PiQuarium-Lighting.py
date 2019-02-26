@@ -1,147 +1,133 @@
-# Updated 19/02/19
+# Last updated 26/02/2019
 
-import time
 import datetime
+import time
 import board
 import neopixel
 
-# Params
-pixel_pin = board.D18 # Data pin for neopixels
-num_pixels = 30 # Number of pixels
-max_bright = 255 # Maximum brightness level
-moon_bright = 50 # Brightness level of moonlight
-min_bright = 0 # Minimum brightness level
-step = 1 # Steps to increase lighting by on each cycle
-delay = 2.3 # Delay between cycles in seconds
+# User settings
+usrDelay = 1  # Delay between each increment in LED lighting change (higher equals longer change times)
+usrStep = 1  # How much to increase the LED lighting at each step (1-255)
+usrMaxBright = 255  # Maximum brightness of the LEDs (max 255)
+usrMinBright = 0  # Minimum brightness of LEDs (suggested 0, otherwise lights will never be completely off)
+usrMoonLight = 55  # How bright the moon lighting should be
+usrNumPixels = 30  # Number of pixels in your neo-pixel strip
 
-#Light times
-sunriseStart = datetime.time(7, 50, 0)
-sunsetStart = datetime.time(21, 55, 0)
-moonStart = datetime.time(0, 36, 0)
-nightStart = datetime.time(0, 39, 0)
+# Light times
+sunriseStart = datetime.time(7, 50, 0)  # Time of sunrise start
+sunsetStart = datetime.time(21, 55, 0)  # Time of sunset start
+moonStart = datetime.time(0, 36, 0)  # Time of moon set (fade to complete dark)
+nightStart = datetime.time(0, 39, 0)  # Time when all lights will be off (suggest allowing 5 mins after moonStart)
 
-#Run Tokens
+# Run Tokens
 sunriseRun = False
 sunsetRun = False
 moonRun = False
 
-#Colour Values
-global WR
-global WG
-global WB
-
+# Neopixel set-up
 ORDER = neopixel.GRB
-
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels,
+pixelPin = board.D18  # Data pin for neopixels
+pixels = neopixel.NeoPixel(pixelPin, usrNumPixels,
                            brightness=1,
                            auto_write=False,
                            pixel_order=ORDER)
 
-redpix = []
-bluepix = []
-whitepix = []
+redPix = []
+bluePix = []
+whitePix = []
 
-for pix in range(num_pixels):
-    if pix % 4 == 0:                     ## every 4th number from 0
-        redpix.append(pix)
-    elif pix % 4 == 1:                   ## every 4th number from 1
-        bluepix.append(pix)
-    else:                              ## all other positions in the range
-        whitepix.append(pix)
-    
-        
-def red_pixels(r=0, g=0, b=0):
-    print("Begin - Red RGB values are {}/{}/{}".format(r,g,b))
-    while r < max_bright:
-        if r < max_bright: r += step
-        
-        for pos in redpix:
-            pixels[pos] = (r, g, b)
-            pixels.show()
-            print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-        time.sleep(delay)
-        
-def red_pixels_down(r=max_bright, g=0, b=0):
-    print("Begin - Red RGB values are {}/{}/{}".format(r, g, b))
-    while r > min_bright:
-        if r > min_bright: r -= step
-        
-        for pos in redpix:
-            pixels[pos] = (r, g, b)
-            pixels.show()
-            print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-        time.sleep(delay)
+for pix in range(usrNumPixels):
+    if pix % 4 == 0:  # every 4th number from 0
+        redPix.append(pix)
+    elif pix % 4 == 1:  # every 4th number from 1
+        bluePix.append(pix)
+    else:  # all other positions in the range
+        whitePix.append(pix)
 
-def blue_pixels(r=0, g=0, b=0):
-    print("Begin - blue RGB values are {}/{}/{}".format(r,g,b))
-    while b < max_bright:
-        if b < max_bright: b += step
-        
-        for pos in bluepix:
-            pixels[pos] = (r, g, b)
-            pixels.show()
-            print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-        time.sleep(delay)
 
-def blue_pixels_down(r=0, g=0, b=max_bright, end_value=0):
-    print("Begin - Blue RGB values are {}/{}/{}".format(r, g, b))
-    while b > end_value:
-        if b > end_value: b -= step
-        
-        for pos in bluepix:
-            pixels[pos] = (r, g, b)
-            pixels.show()
-            print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-        time.sleep(delay)
+def fade(pixelColour,
+         fadeUp,
+         maxBrightR,
+         minBrightR,
+         maxBrightG,
+         minBrightG,
+         maxBrightB,
+         minBrightB,
+         r, g, b):
 
-def white_pixels(r = 0, g = 0, b = 0):
-    WR = r
-    WG = g
-    WB = b
-    print("Begin - White RGB values are {}/{}/{}".format(WR, WG, WB))        
-    while r < max_bright or g < max_bright or b < max_bright:
-        if r < max_bright: r += step
-        if g < max_bright: g += step
-        if b < max_bright: b += step
+    # Catching the pixel colour to alter
+    if pixelColour == 'red':
+        pixList = redPix
+    elif pixelColour == 'blue':
+        pixList = bluePix
+    elif pixelColour == 'white':
+        pixList = whitePix
+    else:
+        print('No valid pixel colour defined')
 
-        for pos in whitepix:
-            pixels[pos] = (r, g, b)
-            pixels.show()
-	   
-            print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-        time.sleep(delay)
+    # Catching if fading up or down
+    if fadeUp:
+        while r < maxBrightR or g < maxBrightG or b < maxBrightB:
+            if r < maxBrightR:
+                r += 1
+            if g < maxBrightG:
+                g += 1
+            if b < maxBrightB:
+                b += 1
+            for pos in pixList:
+                pixels[pos] = (r, g, b)
+                pixels.show()
+                print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
+            time.sleep(usrDelay)
 
-        WR = r
-        WG = g
-        WB = b
-    print("Finished - White RGB values are {}/{}/{}".format(WR, WG, WB))
-    
+    if not fadeUp:
+        while r > minBrightR or g > minBrightG or b > minBrightB:
+            if r > minBrightR:
+                r -= 1
+            if g > minBrightG:
+                g -= 1
+            if b > minBrightB:
+                b -= 1
 
-def white_pixels_down(r = max_bright, g = max_bright, b = max_bright):
-    WR = r
-    WG = g
-    WB = b
-    print("Begin - White RGB values are {}/{}/{}".format(WR, WG, WB))        
-    while r > min_bright or g > min_bright or b > moon_bright:
-        if r > min_bright: r -= step
-        if g > min_bright: g -= step
-        if b > min_bright: b -= step
+            for pos in pixList:
+                pixels[pos] = (r, g, b)
+                pixels.show()
+                print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
+            time.sleep(usrDelay)
 
-        for pos in whitepix:
-            pixels[pos] = (r, g, b)
-            pixels.show()
-	   
-            print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-        time.sleep(delay)
 
-        WR = r
-        WG = g
-        WB = b
-    print("Finished - White RGB values are {}/{}/{}".format(WR, WG, WB)) 
+def sunRise():
+    print('Starting Sunrise')
+    fade('blue', True, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMaxBright, usrMinBright,
+         usrMinBright, usrMinBright, usrMinBright)
+    fade('red', True, usrMaxBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright,
+         usrMinBright, usrMinBright, usrMinBright)
+    fade('white', True, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright,
+         usrMinBright, usrMinBright, usrMinBright)
+    print('Sunrise finished')
+
+
+def sunSet():
+    print('Starting Sunset')
+    fade('red', False, usrMaxBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright,
+         usrMaxBright, usrMinBright, usrMinBright)
+    fade('white', False, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright,
+         usrMaxBright, usrMaxBright, usrMaxBright)
+    fade('blue', False, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMaxBright, usrMoonLight,
+         usrMinBright, usrMinBright, usrMaxBright)
+    print('Sunset Finished')
+
+
+def moonSet():
+    print('Starting Moonset')
+    fade('blue', False, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMoonLight, usrMinBright,
+         usrMinBright, usrMinBright, usrMoonLight)
+    print('Moonset Finished')
+
 
 def isNowInTimePeriod(startTime, endTime, nowTime):
     if startTime < endTime:
-        if nowTime > startTime and nowTime < endTime:
+        if startTime < nowTime < endTime:
             return True
         else:
             return False
@@ -150,56 +136,45 @@ def isNowInTimePeriod(startTime, endTime, nowTime):
             return True
         else:
             return False
-        
+
+
 def checkTime(start, end):
-    timeStart = start 
-    timeEnd = end 
+    timeStart = start
+    timeEnd = end
     timeNow = datetime.datetime.now().time()
     if isNowInTimePeriod(timeStart, timeEnd, timeNow):
-        print(timeNow, "Time in range - Starting now")
+        print(timeNow.strftime('%H:%M:%S'), 'Time in range - Starting now')
         return True
     else:
-        print(timeNow, "Time not in range - waiting until", timeStart)
-        
-def sunrise():
-    blue_pixels()
-    red_pixels()
-    white_pixels()
+        print(timeNow.strftime('%H:%M:%S'), 'Time not in range - waiting until', timeStart.strftime('%H:%M:%S'))
 
-    
-def sunset():
-    red_pixels_down(max_bright)
-    white_pixels_down(max_bright, max_bright, max_bright)
-    blue_pixels_down(0, 0, max_bright, moon_bright)
-    
-def moonset():
-    blue_pixels_down(0, 0, moon_bright, min_bright)
 
-#Main loop
-    
+# Main loop
+
 while True:
-    #Sunrise
+    # Sunrise
     if not sunriseRun:
         if checkTime(sunriseStart, sunsetStart):
-            sunrise()
+            sunRise()
             sunriseRun = True
 
-    #Sunset - Hold moon lighting until night    
+    # Sunset - Hold moon lighting until night
     if not sunsetRun:
         if checkTime(sunsetStart, moonStart):
-            sunset()
+            sunSet()
             sunsetRun = True
 
-    #Moon sets into darkness    
+    # Moon sets into darkness
     if not moonRun:
         if checkTime(moonStart, nightStart):
-            moonset()
+            moonSet()
             moonRun = True
-    
-    #Reset run tokens
+
+    # Reset run tokens
     if moonRun:
         if checkTime(nightStart, sunriseStart):
             moonRun = False
             sunsetRun = False
             sunriseRun = False
     time.sleep(1)
+
