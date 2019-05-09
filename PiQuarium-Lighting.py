@@ -1,21 +1,24 @@
-# Last updated 26/02/2019
+# Last updated 14/4/2019
 
 import datetime
 import time
 import board
 import neopixel
+import RPi.GPIO as GPIO
 
 # User settings
-usrDelay = 1  # Delay between each increment in LED lighting change (higher equals longer change times)
+usrDelay = 3  # Delay between each increment in LED lighting change (higher equals longer change times)
+softDelay = 0.01
 usrStep = 1  # How much to increase the LED lighting at each step (1-255)
 usrMaxBright = 255  # Maximum brightness of the LEDs (max 255)
 usrMinBright = 0  # Minimum brightness of LEDs (suggested 0, otherwise lights will never be completely off)
 usrMoonLight = 55  # How bright the moon lighting should be
-usrNumPixels = 30  # Number of pixels in your neo-pixel strip
+usrNumPixels = 54 # Number of pixels in your neo-pixel strip
 
 # Light times
 sunriseStart = datetime.time(7, 50, 0)  # Time of sunrise start
-sunsetStart = datetime.time(21, 55, 0)  # Time of sunset start
+softOnStart = datetime.time(10, 50, 0)
+sunsetStart = datetime.time(22, 55, 0)  # Time of sunset start
 moonStart = datetime.time(0, 36, 0)  # Time of moon set (fade to complete dark)
 nightStart = datetime.time(0, 39, 0)  # Time when all lights will be off (suggest allowing 5 mins after moonStart)
 
@@ -23,6 +26,12 @@ nightStart = datetime.time(0, 39, 0)  # Time when all lights will be off (sugges
 sunriseRun = False
 sunsetRun = False
 moonRun = False
+
+# Mode Tokens
+GPIO.setwarnings(False)
+##GPIO.setmode(GPIO.BOARD)
+GPIO.setup(23, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+OVERRIDE = False
 
 # Neopixel set-up
 ORDER = neopixel.GRB
@@ -53,7 +62,8 @@ def fade(pixelColour,
          minBrightG,
          maxBrightB,
          minBrightB,
-         r, g, b):
+         r, g, b,
+         delay = usrDelay):
 
     # Catching the pixel colour to alter
     if pixelColour == 'red':
@@ -78,7 +88,7 @@ def fade(pixelColour,
                 pixels[pos] = (r, g, b)
                 pixels.show()
                 print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-            time.sleep(usrDelay)
+            time.sleep(delay)
 
     if not fadeUp:
         while r > minBrightR or g > minBrightG or b > minBrightB:
@@ -93,35 +103,47 @@ def fade(pixelColour,
                 pixels[pos] = (r, g, b)
                 pixels.show()
                 print('(Pixel {}) = (R:{}, G:{}, B:{})'.format(pos, r, g, b))
-            time.sleep(usrDelay)
+            time.sleep(delay)
 
 
 def sunRise():
     print('Starting Sunrise')
     fade('blue', True, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMaxBright, usrMinBright,
-         usrMinBright, usrMinBright, usrMinBright)
+         usrMinBright, usrMinBright, usrMinBright, usrDelay)
     fade('red', True, usrMaxBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright,
-         usrMinBright, usrMinBright, usrMinBright)
+         usrMinBright, usrMinBright, usrMinBright, usrDelay)
     fade('white', True, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright,
-         usrMinBright, usrMinBright, usrMinBright)
+         usrMinBright, usrMinBright, usrMinBright, usrDelay)
     print('Sunrise finished')
+    
+def softOn():
+    print('Starting Soft On')
+    fade('blue', True, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMaxBright, usrMinBright,
+         usrMinBright, usrMinBright, usrMinBright, softDelay)
+    fade('red', True, usrMaxBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright,
+         usrMinBright, usrMinBright, usrMinBright, softDelay)
+    fade('white', True, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright,
+         usrMinBright, usrMinBright, usrMinBright, softDelay)
+    print('Soft On finished')
 
 
 def sunSet():
     print('Starting Sunset')
-    fade('red', False, usrMaxBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright,
-         usrMaxBright, usrMinBright, usrMinBright)
     fade('white', False, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright, usrMaxBright, usrMinBright,
-         usrMaxBright, usrMaxBright, usrMaxBright)
+         usrMaxBright, usrMaxBright, usrMaxBright, usrDelay)
+    fade('red', False, usrMaxBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMinBright,
+         usrMaxBright, usrMinBright, usrMinBright, usrDelay)
     fade('blue', False, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMaxBright, usrMoonLight,
-         usrMinBright, usrMinBright, usrMaxBright)
+         usrMinBright, usrMinBright, usrMaxBright, usrDelay)
+
+
     print('Sunset Finished')
 
 
 def moonSet():
     print('Starting Moonset')
     fade('blue', False, usrMinBright, usrMinBright, usrMinBright, usrMinBright, usrMoonLight, usrMinBright,
-         usrMinBright, usrMinBright, usrMoonLight)
+         usrMinBright, usrMinBright, usrMoonLight, usrDelay)
     print('Moonset Finished')
 
 
@@ -148,33 +170,51 @@ def checkTime(start, end):
     else:
         print(timeNow.strftime('%H:%M:%S'), 'Time not in range - waiting until', timeStart.strftime('%H:%M:%S'))
 
+def toggleOverride():
+    if not OVERRIDE:
+        OVERRIDE = True
+    else:
+        OVERRIDE = False
+    
 
 # Main loop
 
 while True:
-    # Sunrise
-    if not sunriseRun:
-        if checkTime(sunriseStart, sunsetStart):
-            sunRise()
-            sunriseRun = True
+    if GPIO.input(23) == GPIO.HIGH:
+        print("Button Pressed")
+        toggleOverride()
+        if OVERRIDE == True:
+            softOn()
 
-    # Sunset - Hold moon lighting until night
-    if not sunsetRun:
-        if checkTime(sunsetStart, moonStart):
-            sunSet()
-            sunsetRun = True
+    while OVERRIDE == False:
+        # Sunrise
+        if not sunriseRun:
+            if checkTime(sunriseStart, softOnStart):
+                sunRise()
+                sunriseRun = True
+                
+        # Soft On
+        if not sunriseRun:
+            if checkTime(softOnStart, sunsetStart):
+                softOn()
+                sunriseRun = True
 
-    # Moon sets into darkness
-    if not moonRun:
-        if checkTime(moonStart, nightStart):
-            moonSet()
-            moonRun = True
+        # Sunset - Hold moon lighting until night
+        if not sunsetRun:
+            if checkTime(sunsetStart, moonStart):
+                sunSet()
+                sunsetRun = True
 
-    # Reset run tokens
-    if moonRun:
-        if checkTime(nightStart, sunriseStart):
-            moonRun = False
-            sunsetRun = False
-            sunriseRun = False
-    time.sleep(1)
+        # Moon sets into darkness
+        if not moonRun:
+            if checkTime(moonStart, nightStart):
+                moonSet()
+                moonRun = True
 
+        # Reset run tokens
+        if moonRun:
+            if checkTime(nightStart, sunriseStart):
+                moonRun = False
+                sunsetRun = False
+                sunriseRun = False
+        time.sleep(1)
